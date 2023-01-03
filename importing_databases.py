@@ -1,4 +1,5 @@
 import brightway2 as bw
+from tqdm import tqdm
 
 from custom_import_migrations import wfldb_technosphere_migration_data, agb_technosphere_migration_data
 
@@ -41,7 +42,7 @@ def main():
     if db_name in bw.databases:
         print("Database has already been imported.")
     else:
-        fp_ei = r"../databases/ecoinvent 3.8_cutoff_ecoSpold02/datasets"
+        fp_ei = r"databases/ecoinvent 3.8_cutoff_ecoSpold02/datasets"
         ei = bw.SingleOutputEcospold2Importer(fp_ei, db_name, use_mp=False)
         ei.apply_strategies()
         ei.statistics()
@@ -59,7 +60,7 @@ def main():
     if 'agribalyse3' in bw.databases:
         print("Database has already been imported.")
     else:
-        agb_csv_filepath = r"../databases/agribalyse3_no_param.CSV"
+        agb_csv_filepath = r"databases/agribalyse3_no_param.CSV"
 
         agb_importer = bw.SimaProCSVImporter(agb_csv_filepath, "agribalyse3")
 
@@ -83,6 +84,19 @@ def main():
         agb_importer.add_unlinked_activities()
         agb_importer.statistics()
 
+        # Fixing uncertainty data
+        for process in tqdm(agb_importer):
+            for exchange in process.get('exchanges', []):
+                if ((exchange.get('uncertainty type') == 2)
+                        and (exchange.get('scale', 0) <= 0)
+                or (exchange.get('uncertainty type') == 5)
+                        and (exchange.get('minimum', 0) >= exchange.get('maximum', 0))):
+                    exchange['uncertainty type'] = 0
+
+                    for to_delete in ['loc', 'scale', 'negative', 'minimum', 'maximum']:
+                        if to_delete in exchange:
+                            del exchange[to_delete]
+
         add_simapro_categories(agb_importer)
 
         agb_importer.write_database()
@@ -92,7 +106,7 @@ def main():
     if 'WFLDB' in bw.databases:
         print("Database has already been imported.")
     else:
-        wfldb_csv_filepath = r"../databases/WFLDB_no_param.CSV"
+        wfldb_csv_filepath = r"databases/WFLDB_no_param.CSV"
 
         wfldb_importer = bw.SimaProCSVImporter(wfldb_csv_filepath, "WFLDB")
 
