@@ -34,7 +34,7 @@ wfldb_technosphere_migration_data = {
                 'litre'),
             {
                 'unit': 'cubic meter',
-                'multiplier': 10e-3
+                'multiplier': 1e-3
             }
         ),
         (
@@ -42,7 +42,7 @@ wfldb_technosphere_migration_data = {
              'litre'),
             {
                 'unit': 'cubic meter',
-                'multiplier': 10e-3
+                'multiplier': 1e-3
             }
         ),
         (
@@ -50,7 +50,7 @@ wfldb_technosphere_migration_data = {
              'litre'),
             {
                 'unit': 'cubic meter',
-                'multiplier': 10e-3
+                'multiplier': 1e-3
             }
         ),
     ]
@@ -64,7 +64,7 @@ agb_technosphere_migration_data = {
              'litre'),
             {
                 'unit': 'cubic meter',
-                'multiplier': 10e-3
+                'multiplier': 1e-3
             }
         ),
         (
@@ -72,7 +72,7 @@ agb_technosphere_migration_data = {
              'litre'),
             {
                 'unit': 'cubic meter',
-                'multiplier': 10e-3
+                'multiplier': 1e-3
             }
         ),
     ]
