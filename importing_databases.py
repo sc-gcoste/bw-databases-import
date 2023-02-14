@@ -1,20 +1,23 @@
 import brightway2 as bw
 from tqdm import tqdm
 
-from custom_import_migrations import wfldb_technosphere_migration_data, agb_technosphere_migration_data
+from custom_import_migrations import (
+    wfldb_technosphere_migration_data,
+    agb_technosphere_migration_data,
+)
 
 
 def add_simapro_categories(importer):
     for process in importer:
-        if 'exchanges' in process:
-            products = [x for x in process['exchanges'] if x['type'] == 'production']
+        if "exchanges" in process:
+            products = [x for x in process["exchanges"] if x["type"] == "production"]
             assert len(products) == 1
             product = products[0]
-            process['simapro_categories'] = product['categories']
+            process["simapro_categories"] = product["categories"]
 
 
 def main():
-    bw.projects.set_current('EF calculation')
+    bw.projects.set_current("EF calculation")
     bw.bw2setup()
 
     # Ecoinvent 3.9
@@ -37,7 +40,7 @@ def main():
     #     ei.write_database()
 
     # Ecoinvent 3.8
-    db_name = 'ecoinvent3.8_cutoff'
+    db_name = "ecoinvent3.8_cutoff"
     # del bw.databases[db_name]
     if db_name in bw.databases:
         print("Database has already been imported.")
@@ -49,15 +52,19 @@ def main():
 
         # Changing the process names to differentiate coproducts
         for activity in ei:
-            if activity['name'] not in \
-                    (activity['reference product'], "market for " + activity['reference product']):
-                activity['name'] = f"{activity['name']} - {activity['reference product']}"
+            if activity["name"] not in (
+                activity["reference product"],
+                "market for " + activity["reference product"],
+            ):
+                activity[
+                    "name"
+                ] = f"{activity['name']} - {activity['reference product']}"
 
         ei.write_database()
 
     # Agribalyse
     # del bw.databases['agribalyse3']
-    if 'agribalyse3' in bw.databases:
+    if "agribalyse3" in bw.databases:
         print("Database has already been imported.")
     else:
         agb_csv_filepath = r"databases/agribalyse3_no_param.CSV"
@@ -67,13 +74,16 @@ def main():
         agb_technosphere_migration = bw.Migration("agb-technosphere")
         agb_technosphere_migration.write(
             agb_technosphere_migration_data,
-            description="Specific technosphere fixes for Agribalyse 3"
+            description="Specific technosphere fixes for Agribalyse 3",
         )
 
         agb_importer.apply_strategies()
         agb_importer.statistics()
         agb_importer.migrate("agb-technosphere")
-        agb_importer.match_database("ecoinvent3.8_cutoff", fields=('reference product', 'location', 'unit', 'name'))
+        agb_importer.match_database(
+            "ecoinvent3.8_cutoff",
+            fields=("reference product", "location", "unit", "name"),
+        )
         agb_importer.apply_strategies()
         agb_importer.statistics()
 
@@ -86,14 +96,16 @@ def main():
 
         # Fixing uncertainty data
         for process in tqdm(agb_importer):
-            for exchange in process.get('exchanges', []):
-                if ((exchange.get('uncertainty type') == 2)
-                        and (exchange.get('scale', 0) <= 0)
-                or (exchange.get('uncertainty type') == 5)
-                        and (exchange.get('minimum', 0) >= exchange.get('maximum', 0))):
-                    exchange['uncertainty type'] = 0
+            for exchange in process.get("exchanges", []):
+                if (
+                    (exchange.get("uncertainty type") == 2)
+                    and (exchange.get("scale", 0) <= 0)
+                    or (exchange.get("uncertainty type") == 5)
+                    and (exchange.get("minimum", 0) >= exchange.get("maximum", 0))
+                ):
+                    exchange["uncertainty type"] = 0
 
-                    for to_delete in ['loc', 'scale', 'negative', 'minimum', 'maximum']:
+                    for to_delete in ["loc", "scale", "negative", "minimum", "maximum"]:
                         if to_delete in exchange:
                             del exchange[to_delete]
 
@@ -103,7 +115,7 @@ def main():
     #
     # # WFLDB
     # del bw.databases['WFLDB']
-    if 'WFLDB' in bw.databases:
+    if "WFLDB" in bw.databases:
         print("Database has already been imported.")
     else:
         wfldb_csv_filepath = r"databases/WFLDB_no_param.CSV"
@@ -113,7 +125,7 @@ def main():
         wfldb_technosphere_migration = bw.Migration("wfldb-technosphere")
         wfldb_technosphere_migration.write(
             wfldb_technosphere_migration_data,
-            description="Specific technosphere fixes for World Food DB"
+            description="Specific technosphere fixes for World Food DB",
         )
 
         wfldb_importer.apply_strategies()
@@ -131,27 +143,36 @@ def main():
 
         # Fixing an invalid uncertainty value for 3 exchanges
         exchanges_to_fix = [
-            ('Coffee, regular, freeze dried, at plant (WFLDB)',
-             'Transformation into freeze-dried soluble coffee, green coffee, per kg product (WFLDB)'),
-            ('Coffee, regular, spray dried, at plant (WFLDB)',
-             'Transformation into spray-dried soluble coffee, green coffee, per kg product (WFLDB)'),
-            ('Coffee, regular, roast and ground, at plant (WFLDB)',
-             'Roasting and grinding, green coffee (WFLDB)')
+            (
+                "Coffee, regular, freeze dried, at plant (WFLDB)",
+                "Transformation into freeze-dried soluble coffee, green coffee, per kg product (WFLDB)",
+            ),
+            (
+                "Coffee, regular, spray dried, at plant (WFLDB)",
+                "Transformation into spray-dried soluble coffee, green coffee, per kg product (WFLDB)",
+            ),
+            (
+                "Coffee, regular, roast and ground, at plant (WFLDB)",
+                "Roasting and grinding, green coffee (WFLDB)",
+            ),
         ]
 
         for activity_name, input_name in exchanges_to_fix:
-            exchange = next(y for x in wfldb_importer for y in x['exchanges']
-                            if (x['name'] == activity_name)
-                            and (y['name'] == input_name))
-            exchange['uncertainty type'] = 0
-            del exchange['loc']
-            del exchange['scale']
-            del exchange['negative']
+            exchange = next(
+                y
+                for x in wfldb_importer
+                for y in x["exchanges"]
+                if (x["name"] == activity_name) and (y["name"] == input_name)
+            )
+            exchange["uncertainty type"] = 0
+            del exchange["loc"]
+            del exchange["scale"]
+            del exchange["negative"]
 
         add_simapro_categories(wfldb_importer)
 
         wfldb_importer.write_database()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
