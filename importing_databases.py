@@ -16,36 +16,21 @@ def add_simapro_categories(importer):
             process["simapro_categories"] = product["categories"]
 
 
-def main():
-    bw.projects.set_current("EF calculation")
-    bw.bw2setup()
-
-    # Ecoinvent 3.9
-    # db_name = 'ecoinvent3.9_cutoff'
-    # # del bw.databases[db_name]
-    # if db_name in bw.databases:
-    #     print("Database has already been imported.")
-    # else:
-    #     fp_ei = rf"../databases/ecoinvent 3.9_cutoff_ecoSpold02/datasets"
-    #     ei = bw.SingleOutputEcospold2Importer(fp_ei, db_name, use_mp=False)
-    #     ei.apply_strategies()
-    #     ei.statistics()
-    #
-    #     # Changing the process names to differentiate coproducts
-    #     for activity in ei:
-    #         if activity['name'] not in \
-    #                 (activity['reference product'], "market for " + activity['reference product']):
-    #             activity['name'] = f"{activity['name']} - {activity['reference product']}"
-    #
-    #     ei.write_database()
-
-    # Ecoinvent 3.8
-    db_name = "ecoinvent3.8_cutoff"
-    # del bw.databases[db_name]
+def _check_db_exists(db_name: str, delete_if_exist: bool):
     if db_name in bw.databases:
-        print("Database has already been imported.")
-    else:
-        fp_ei = r"databases/ecoinvent 3.8_cutoff_ecoSpold02/datasets"
+        if delete_if_exist:
+            del bw.databases[db_name]
+            return False
+        else:
+            print(f"{db_name} has already been imported.")
+            return True
+
+
+def import_ecoinvent(version: str = "3.8", delete_if_exist: bool = False):
+    db_name = f"ecoinvent{version}_cutoff"
+
+    if not _check_db_exists(db_name, delete_if_exist):
+        fp_ei = f"databases/ecoinvent {version}_cutoff_ecoSpold02/datasets"
         ei = bw.SingleOutputEcospold2Importer(fp_ei, db_name, use_mp=False)
         ei.apply_strategies()
         ei.statistics()
@@ -62,11 +47,10 @@ def main():
 
         ei.write_database()
 
-    # Agribalyse
-    # del bw.databases['agribalyse3']
-    if "agribalyse3" in bw.databases:
-        print("Database has already been imported.")
-    else:
+
+def import_agribalyse(delete_if_exist: bool = False):
+    db_name = "agribalyse3"
+    if not _check_db_exists(db_name, delete_if_exist):
         agb_csv_filepath = r"databases/agribalyse3_no_param.CSV"
 
         agb_importer = bw.SimaProCSVImporter(agb_csv_filepath, "agribalyse3")
@@ -112,12 +96,11 @@ def main():
         add_simapro_categories(agb_importer)
 
         agb_importer.write_database()
-    #
-    # # WFLDB
-    # del bw.databases['WFLDB']
-    if "WFLDB" in bw.databases:
-        print("Database has already been imported.")
-    else:
+
+
+def import_wfldb(delete_if_exist: bool = False):
+    db_name = "WFLDB"
+    if not _check_db_exists(db_name, delete_if_exist):
         wfldb_csv_filepath = r"databases/WFLDB_no_param.CSV"
 
         wfldb_importer = bw.SimaProCSVImporter(wfldb_csv_filepath, "WFLDB")
@@ -172,6 +155,15 @@ def main():
         add_simapro_categories(wfldb_importer)
 
         wfldb_importer.write_database()
+
+
+def main():
+    bw.projects.set_current("EF calculation")
+    bw.bw2setup()
+
+    import_ecoinvent("3.8")
+    import_agribalyse()
+    import_wfldb()
 
 
 if __name__ == "__main__":
