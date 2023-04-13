@@ -1,3 +1,0 @@
-brightway2
-bw2io == 0.8.7
-pre-commit
