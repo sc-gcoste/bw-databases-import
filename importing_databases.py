@@ -1,3 +1,5 @@
+import re
+
 import brightway2 as bw
 from tqdm import tqdm
 
@@ -178,6 +180,14 @@ def import_agrifootprint(delete_if_exist: bool = False):
     importer.add_unlinked_activities()
     importer.add_unlinked_flows_to_biosphere_database()
     importer.statistics()
+
+    # Setting location as it is not recognized
+    for process in importer:
+        location_match = re.search("\{(.*)\}", process["name"])
+        if location_match:
+            process["location"] = location_match.group(1)
+        else:
+            process["location"] = "GLO"
 
     importer.write_database()
 
