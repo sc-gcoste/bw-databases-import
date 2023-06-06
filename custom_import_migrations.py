@@ -65,3 +65,23 @@ agb_technosphere_migration_data = {
         ),
     ],
 }
+
+afp_technosphere_migration_data = {
+    "fields": ["name", "unit"],
+    "data": [
+        (
+            (
+                "Heat, district or industrial, natural gas {Europe without Switzerland}| heat production, natural gas, at industrial furnace >100kW | Cut-off, S - Copied from ecoinvent U",
+                "kilowatt hour",
+            ),
+            {"unit": "megajoule", "multiplier": 3.6},
+        ),
+        (
+            (
+                "Heat, district or industrial, natural gas {RoW}| heat production, natural gas, at industrial furnace >100kW | Cut-off, S - Copied from ecoinvent U",
+                "kilowatt hour",
+            ),
+            {"unit": "megajoule", "multiplier": 3.6},
+        ),
+    ],
+}

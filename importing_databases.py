@@ -4,6 +4,7 @@ from tqdm import tqdm
 from custom_import_migrations import (
     wfldb_technosphere_migration_data,
     agb_technosphere_migration_data,
+    afp_technosphere_migration_data,
 )
 
 
@@ -157,6 +158,30 @@ def import_wfldb(delete_if_exist: bool = False):
         wfldb_importer.write_database()
 
 
+def import_agrifootprint(delete_if_exist: bool = False):
+    if delete_if_exist:
+        if "Agrifootprint" in bw.databases:
+            del bw.databases["Agrifootprint"]
+
+    importer = bw.SimaProCSVImporter("databases/agrifootprint.CSV", "Agrifootprint")
+
+    technosphere_migration = bw.Migration("afp-technosphere")
+    technosphere_migration.write(
+        afp_technosphere_migration_data,
+        description="Specific technosphere fixes for Agrifootprint",
+    )
+
+    importer.apply_strategies()
+    importer.migrate("afp-technosphere")
+    importer.apply_strategies()
+    importer.statistics()
+    importer.add_unlinked_activities()
+    importer.add_unlinked_flows_to_biosphere_database()
+    importer.statistics()
+
+    importer.write_database()
+
+
 def main():
     bw.projects.set_current("EF calculation")
     bw.bw2setup()
@@ -164,6 +189,7 @@ def main():
     import_ecoinvent("3.8")
     import_agribalyse()
     import_wfldb()
+    import_agrifootprint()
 
 
 if __name__ == "__main__":
