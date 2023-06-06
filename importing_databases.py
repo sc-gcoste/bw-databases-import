@@ -160,10 +160,10 @@ def import_wfldb(delete_if_exist: bool = False):
 
 def import_agrifootprint(delete_if_exist: bool = False):
     if delete_if_exist:
-        if "Agrifootprint" in bw.databases:
-            del bw.databases["Agrifootprint"]
+        if "agrifootprint" in bw.databases:
+            del bw.databases["agrifootprint"]
 
-    importer = bw.SimaProCSVImporter("databases/agrifootprint.CSV", "Agrifootprint")
+    importer = bw.SimaProCSVImporter("databases/agrifootprint.CSV", "agrifootprint")
 
     technosphere_migration = bw.Migration("afp-technosphere")
     technosphere_migration.write(
