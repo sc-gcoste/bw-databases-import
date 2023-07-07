@@ -7,6 +7,7 @@ from custom_import_migrations import (
     wfldb_technosphere_migration_data,
     agb_technosphere_migration_data,
     afp_technosphere_migration_data,
+    auslci_technosphere_migration_data,
 )
 
 
@@ -189,6 +190,33 @@ def import_agrifootprint(delete_if_exist: bool = False):
         else:
             process["location"] = "GLO"
 
+    add_simapro_categories(importer)
+
+    importer.write_database()
+
+
+def import_auslci(delete_if_exist: bool = False):
+    if delete_if_exist:
+        if "auslci" in bw.databases:
+            del bw.databases["auslci"]
+
+    importer = bw.SimaProCSVImporter("databases/auslci.CSV", "auslci")
+
+    technosphere_migration = bw.Migration("auslci-technosphere")
+    technosphere_migration.write(
+        auslci_technosphere_migration_data,
+        description="Specific technosphere fixes for ausLCI",
+    )
+
+    importer.apply_strategies()
+    importer.migrate("auslci-technosphere")
+    importer.statistics()
+    importer.add_unlinked_activities()
+    importer.add_unlinked_flows_to_biosphere_database()
+    importer.statistics()
+
+    add_simapro_categories(importer)
+
     importer.write_database()
 
 
@@ -200,6 +228,7 @@ def main():
     import_agribalyse()
     import_wfldb()
     import_agrifootprint()
+    import_auslci(True)
 
 
 if __name__ == "__main__":
