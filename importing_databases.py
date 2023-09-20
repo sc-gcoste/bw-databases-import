@@ -22,30 +22,48 @@ def add_simapro_categories(importer):
 
 def fix_locations(importer):
     for process in tqdm(importer):
+        if not process.get("name"):
+            continue
+
         if not process.get("location"):
             # Looking for stuff like xxxxxxxxxx{GLO}xxxxxxxxxxx
-            locations = [x for x in re.findall(r"{.+}", process["name"])]
 
+            pattern = r"{.+}"
+            locations = [x for x in re.findall(pattern, process["name"])]
             if len(locations) == 1:
                 process["location"] = locations[0][1:-1]  # Stripping the brackets
                 continue
 
-            if re.search(r"; french production", process["name"], re.IGNORECASE):
+            pattern = r"; french production"
+            if re.search(pattern, process["name"], re.IGNORECASE):
                 process["location"] = "FR"
                 continue
 
-            if re.search(r"/FR( \[Ciqual|$)", process["name"]):
+            pattern = r"/FR( \[Ciqual|$)"
+            if re.search(pattern, process["name"]):
                 process["location"] = "FR"
                 continue
 
-            locations = [x for x in re.findall(r"/(?P<location>.+) U", process["name"])]
+            pattern = r"/(?P<location>.+) U"
+            locations = [x for x in re.findall(pattern, process["name"])]
             if len(locations) == 1:
                 process["location"] = locations[0]
                 continue
 
-            locations = [
-                x for x in re.findall(r"(?P<location>\w+) ?/ ?U", process["name"])
-            ]
+            pattern = r"(?P<location>\w+) ?/ ?U$"
+            locations = [x for x in re.findall(pattern, process["name"])]
+            if len(locations) == 1:
+                process["location"] = locations[0]
+                continue
+
+            pattern = r"\W(?P<location>(([A-Z]{2,3})|(Europe without Switzerland)|(RoW)))(\W|$)"
+            locations = [x[0] for x in re.findall(pattern, process["name"])]
+            if len(locations) == 1:
+                process["location"] = locations[0]
+                continue
+
+            pattern = r"/(?P<location>[A-Z]{2,3})$"
+            locations = [x for x in re.findall(pattern, process["name"])]
             if len(locations) == 1:
                 process["location"] = locations[0]
                 continue
@@ -160,11 +178,26 @@ def import_wfldb(delete_if_exist: bool = False):
         wfldb_importer.apply_strategies()
         wfldb_importer.statistics()
 
+        for process in wfldb_importer:
+            if not process.get("name"):
+                if "Process name" in process["simapro metadata"]:
+                    process["name"] = process["simapro metadata"]["Process name"]
+                else:
+                    prod_exchanges = [
+                        x for x in process["exchanges"] if x.get("type") == "production"
+                    ]
+                    if len(prod_exchanges) != 1:
+                        raise Exception("Unable to define process name")
+                    process["name"] = prod_exchanges[0]["name"]
+
+        wfldb_importer.apply_strategies()
+        wfldb_importer.statistics()
+
         # The only unlinked process is Wastewater, average {CH}| treatment of, capacity 5E9l/year | Cut-off, S - Copied from ecoinvent
         # But it is only used by an orphan process, so it is considered ok to ignore it.
 
-        wfldb_importer.add_unlinked_activities()
         wfldb_importer.add_unlinked_flows_to_biosphere_database()
+        wfldb_importer.add_unlinked_activities()
         wfldb_importer.statistics()
 
         # Fixing an invalid uncertainty value for 3 exchanges
