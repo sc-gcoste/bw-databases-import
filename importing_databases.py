@@ -20,6 +20,43 @@ def add_simapro_categories(importer):
             process["simapro_categories"] = product["categories"]
 
 
+def fix_locations(importer):
+    for process in tqdm(importer):
+        if not process.get("location"):
+            # Looking for stuff like xxxxxxxxxx{GLO}xxxxxxxxxxx
+            locations = [x for x in re.findall(r"{.+}", process["name"])]
+
+            if len(locations) == 1:
+                process["location"] = locations[0][1:-1]  # Stripping the brackets
+                continue
+
+            if re.search(r"; french production", process["name"], re.IGNORECASE):
+                process["location"] = "FR"
+                continue
+
+            if re.search(r"/FR( \[Ciqual|$)", process["name"]):
+                process["location"] = "FR"
+                continue
+
+            locations = [x for x in re.findall(r"/(?P<location>.+) U", process["name"])]
+            if len(locations) == 1:
+                process["location"] = locations[0]
+                continue
+
+            locations = [
+                x for x in re.findall(r"(?P<location>\w+) ?/ ?U", process["name"])
+            ]
+            if len(locations) == 1:
+                process["location"] = locations[0]
+                continue
+
+            print(
+                f"No location found for process, used GLO instead.\n{process['name']}\n"
+            )
+
+            process["location"] = "GLO"
+
+
 def _check_db_exists(db_name: str, delete_if_exist: bool):
     if db_name in bw.databases:
         if delete_if_exist:
@@ -97,6 +134,8 @@ def import_agribalyse(delete_if_exist: bool = False):
                         if to_delete in exchange:
                             del exchange[to_delete]
 
+        fix_locations(agb_importer)
+
         add_simapro_categories(agb_importer)
 
         agb_importer.write_database()
@@ -158,6 +197,8 @@ def import_wfldb(delete_if_exist: bool = False):
 
         add_simapro_categories(wfldb_importer)
 
+        fix_locations(wfldb_importer)
+
         wfldb_importer.write_database()
 
 
@@ -182,13 +223,7 @@ def import_agrifootprint(delete_if_exist: bool = False):
     importer.add_unlinked_flows_to_biosphere_database()
     importer.statistics()
 
-    # Setting location as it is not recognized
-    for process in importer:
-        location_match = re.search("\{(.*)\}", process["name"])
-        if location_match:
-            process["location"] = location_match.group(1)
-        else:
-            process["location"] = "GLO"
+    fix_locations(importer)
 
     add_simapro_categories(importer)
 
@@ -215,6 +250,8 @@ def import_auslci(delete_if_exist: bool = False):
     importer.add_unlinked_flows_to_biosphere_database()
     importer.statistics()
 
+    fix_locations(importer)
+
     add_simapro_categories(importer)
 
     importer.write_database()
@@ -228,7 +265,7 @@ def main():
     import_agribalyse()
     import_wfldb()
     import_agrifootprint()
-    import_auslci(True)
+    import_auslci()
 
 
 if __name__ == "__main__":
